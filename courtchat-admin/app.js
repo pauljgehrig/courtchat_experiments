@@ -116,73 +116,67 @@ function renderTopbar(activeId) {
 function viewReview() {
   const c = D.review.current;
   const confLow = c.confidence < 0.85;
-  return pageHead("Review &amp; approve queue",
-    "The next pending case-update notification, with extracted fields, rendered preview, and GPT reasoning. Approving is the unit counted by every downstream metric.", "3a") + `
-    <div class="row" style="align-items:flex-start">
-      <div class="stack" style="flex:1.4">
-        <div class="card">
-          <div class="card-head">
-            <h3>Next pending · ${c.category}</h3>
-            <span class="badge gray">${c.case}</span>
-            <span class="spacer"></span>
-            <span class="sub">Defendant</span>
-            <a class="badge" onclick="go('#/users/${c.userId}')" style="cursor:pointer">${esc(c.defendant)} →</a>
-          </div>
-          <div class="card-pad">
-            <div class="confidence mb8">
-              <span class="sub" style="font-size:12px;color:var(--muted)">GPT confidence</span>
-              <div class="conf-track"><div class="conf-fill ${confLow ? "low" : ""}" style="width:${c.confidence * 100}%"></div></div>
-              <strong>${pct(c.confidence)}</strong>
-              <span class="proto-flag">· ${esc(c.event)}</span>
-            </div>
-            <div class="kv mt8">
-              ${c.fields.map((f) => `<div class="k">${esc(f.label)}</div><div>${esc(f.value)}</div>`).join("")}
-            </div>
-            <div class="divider"></div>
-            <div class="sub" style="font-size:12px;color:var(--muted);margin-bottom:6px">Rendered message preview</div>
-            <div class="tl-bubble tl-out" style="max-width:none">${esc(c.preview)}</div>
-            <div class="row mt20">
-              <button class="btn success">✓ Approve &amp; queue</button>
-              <button class="btn">Reject</button>
-              <button class="btn ghost">Skip</button>
-            </div>
-          </div>
-        </div>
+  // Category is the reviewer-editable classification of the docket update;
+  // the extracted fields follow as editable inputs to confirm before queuing.
+  const fields = [{ label: "Category", value: "Pretrial hearing scheduled" }, ...c.fields];
 
-        <div class="card">
-          <div class="card-head"><h3>Raw <span class="mono" style="font-size:12px">gptResult</span></h3><span class="sub">two-pass · ${esc(c.gptResult.model)}</span></div>
-          <div class="card-pad">
-            <div class="proto-flag mb8">Original docket entry</div>
-            <div class="code-block">${esc(c.original)}</div>
-            <div class="proto-flag mb8 mt14">Pipeline output</div>
-            <div class="code-block">${esc(JSON.stringify(c.gptResult, null, 2))}</div>
-          </div>
+  const queue = D.review.backlog.map((b, i) => {
+    const sel = i === 0;
+    const lvl = b.conf >= 0.85 ? "ok" : "warn";
+    return `
+      <div class="queue-item${sel ? " selected" : ""}">
+        <div class="qi-top">
+          <span class="qi-cat">${esc(b.category)}</span>
+          <span class="conf-pill ${lvl}">${pct(b.conf)}</span>
         </div>
+        <div class="qi-meta">
+          <span class="mono">${b.case}</span>
+          <span class="qi-dot">·</span>
+          <span>${b.court}</span>
+          <span class="spacer"></span>
+          <span class="qi-age">${b.age}</span>
+        </div>
+      </div>`;
+  }).join("");
+
+  return pageHead("Review & approve queue",
+    "The next pending case-update notification, with extracted fields, rendered preview, and GPT reasoning. Approving is the unit counted by every downstream metric.", "3a") + `
+    <div class="review-split">
+      <div class="card queue-card">
+        <div class="card-head">
+          <h3>Updates to categorize</h3>
+          <span class="spacer"></span>
+          <span class="badge">${D.review.backlogCount} pending</span>
+        </div>
+        <div class="queue-list">${queue}</div>
       </div>
 
-      <div class="stack" style="flex:1">
-        <div class="card">
-          <div class="card-head"><h3>Backlog</h3><span class="badge">${D.review.backlogCount} pending</span></div>
-          <table class="tbl">
-            <thead><tr><th>Case</th><th>Category</th><th>Court</th><th class="num">Age</th></tr></thead>
-            <tbody>${D.review.backlog.map((b) => `
-              <tr><td class="mono">${b.case}</td><td>${b.category}</td><td>${b.court}</td><td class="num">${b.age}</td></tr>`).join("")}
-            </tbody>
-          </table>
-        </div>
-
-        <div class="card">
-          <div class="card-head">
-            <h3>Sub-0.85 confidence drops</h3>
-            <span class="badge warning">${D.review.drops.length} new</span>
+      <div class="card detail-card">
+        <div class="card-pad">
+          <div class="sub" style="font-size:12px;color:var(--muted);margin-bottom:6px">Docket entry</div>
+          <div class="code-block">${esc(c.original)}</div>
+          <div class="divider"></div>
+          <div class="confidence mb8">
+            <span class="sub" style="font-size:12px;color:var(--muted)">GPT confidence</span>
+            <div class="conf-track"><div class="conf-fill ${confLow ? "low" : ""}" style="width:${c.confidence * 100}%"></div></div>
+            <strong>${pct(c.confidence)}</strong>
+            <span class="proto-flag">· ${esc(c.event)}</span>
           </div>
-          <div class="card-pad"><div class="section-note mb8">Net-new: today these are silently discarded. Persisting them (<span class="mono">status='dropped'</span>) makes them reviewable.</div></div>
-          <table class="tbl">
-            <thead><tr><th>Case</th><th>Guess</th><th class="num">Conf</th></tr></thead>
-            <tbody>${D.review.drops.map((d) => `
-              <tr><td class="mono">${d.case}</td><td>${d.subject}</td><td class="num">${pct(d.conf)}</td></tr>`).join("")}
-            </tbody>
-          </table>
+          <div class="field-grid mt8">
+            ${fields.map((f) => `
+              <div class="field-row">
+                <label class="field-label">${esc(f.label)}</label>
+                <input class="input" value="${esc(f.value)}" />
+              </div>`).join("")}
+          </div>
+          <div class="divider"></div>
+          <div class="sub" style="font-size:12px;color:var(--muted);margin-bottom:6px">Rendered message preview</div>
+          <div class="tl-bubble tl-out" style="max-width:none">${esc(c.preview)}</div>
+          <div class="row mt20">
+            <button class="btn success">✓ Approve &amp; queue</button>
+            <button class="btn">Reject</button>
+            <button class="btn ghost">Skip</button>
+          </div>
         </div>
       </div>
     </div>`;

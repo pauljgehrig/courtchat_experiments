@@ -233,3 +233,38 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
 .section-note { font-size:12px; color:var(--muted); background:#FAF8FE; border:1px dashed var(--line-strong); border-radius:8px; padding:9px 12px; }
 .proto-flag { font-size:11px; color:var(--muted-2); font-style:italic; }
 .list-reset { list-style:none; padding:0; margin:0; }
+
+/* ---------- Review — master/detail split (3a) ---------- */
+.review-split { display: grid; grid-template-columns: 380px 1fr; gap: 14px; align-items: start; }
+
+/* Left: selectable queue of updates to categorize */
+.queue-card { overflow: hidden; }
+.queue-list { display: flex; flex-direction: column; }
+.queue-item {
+  padding: 12px 14px 12px 11px; border-left: 3px solid transparent;
+  border-bottom: 1px solid var(--line); cursor: pointer;
+}
+.queue-item:last-child { border-bottom: none; }
+.queue-item:hover { background: #FAF8FE; }
+.queue-item.selected { background: var(--purple-tint); border-left-color: var(--purple); }
+.qi-top { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.qi-cat { font-weight: 600; font-size: 13.5px; }
+.queue-item.selected .qi-cat { color: var(--purple-dark); }
+.conf-pill { margin-left: auto; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 100px; }
+.conf-pill.ok { background: var(--success-tint); color: var(--success); }
+.conf-pill.warn { background: var(--warning-tint); color: var(--warning); }
+.qi-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.qi-meta .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: var(--secondary); }
+.qi-meta .spacer { flex: 1; }
+.qi-dot { color: var(--muted-2); }
+
+/* Right: categorization form (label + editable input rows) */
+.field-grid { display: flex; flex-direction: column; gap: 10px; }
+.field-row { display: grid; grid-template-columns: 130px 1fr; align-items: center; gap: 12px; }
+.field-label { font-size: 13px; color: var(--muted); }
+.input {
+  width: 100%; font-family: inherit; font-size: 13px; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm); padding: 8px 11px;
+}
+.input:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-tint); }
